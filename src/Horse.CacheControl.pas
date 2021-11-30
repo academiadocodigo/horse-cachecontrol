@@ -1,13 +1,21 @@
 unit Horse.CacheControl;
 
+{$IF DEFINED(FPC)}
+  {$MODE DELPHI}{$H+}
+{$ENDIF}
+
 interface
 
 uses
-  System.SysUtils,
+  {$IF DEFINED(FPC)}
+    SysUtils,
+  {$ELSE}
+    System.SysUtils,
+  {$ENDIF}
   Horse;
 
 type
-  HorseCacheControlConfig = record
+  HorseCacheControlConfig = {$IF DEFINED(FPC)} class {$ELSE} record {$ENDIF}
   public
     function MaxAge(AMaxAge: Integer): HorseCacheControlConfig;
     function NoCache: HorseCacheControlConfig;
@@ -17,12 +25,17 @@ type
   end;
 
 function HorseCacheControl(): HorseCacheControlConfig; overload;
-procedure CacheControl(Req: THorseRequest; Res: THorseResponse; Next: TProc); overload;
+procedure CacheControl(Req: THorseRequest; Res: THorseResponse; Next: {$IF DEFINED(FPC)}TNextProc{$ELSE}TProc{$ENDIF}); overload;
 
 implementation
 
 uses
-  System.StrUtils, Web.HTTPApp;
+  {$IF DEFINED(FPC)}
+  StrUtils, HTTPDefs
+  {$ELSE}
+  System.StrUtils, Web.HTTPApp
+  {$ENDIF}
+  ;
 
 var
   LMaxAge: string;
@@ -32,12 +45,13 @@ var
   LPrivate : string;
   HorseConfig : HorseCacheControlConfig;
 
-procedure CacheControl(Req: THorseRequest; Res: THorseResponse; Next: TProc);
+procedure CacheControl(Req: THorseRequest; Res: THorseResponse; Next: {$IF DEFINED(FPC)}TNextProc{$ELSE}TProc{$ENDIF}
+  );
 var
-  LWebResponse: TWebResponse;
+  LWebResponse: {$IF DEFINED(FPC)} TResponse {$ELSE} TWebResponse {$ENDIF};
   aCache : String;
 begin
-  LWebResponse := THorseHackResponse(Res).GetWebResponse;
+  LWebResponse := THorseResponse(Res).RawWebResponse;
   try
     Next();
   finally
@@ -52,7 +66,11 @@ end;
 
 function HorseCacheControl(): HorseCacheControlConfig;
 begin
+  {$IF DEFINED(FPC)}
+    Result := HorseCacheControlConfig(HorseConfig.Create);
+  {$ELSE}
   Result := HorseConfig;
+  {$ENDIF}
 end;
 
 { HorseCacheControlConfig }
